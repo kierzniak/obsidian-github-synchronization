@@ -83,6 +83,9 @@ export default class GitHubSyncPlugin extends Plugin {
     this.sync?.stop();
     for (const modal of this.modals) modal.close();
   }
+  hasRepository(): Promise<boolean> {
+    return this.app.vault.adapter.exists('.git/HEAD');
+  }
   async saveSettings(reconfigure = true): Promise<void> {
     await this.saveData(this.settings);
     if (reconfigure) this.scheduler?.configure();

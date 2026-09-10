@@ -1,6 +1,7 @@
 import { App, PluginSettingTab, Setting } from 'obsidian';
 import type GitHubSyncPlugin from './main';
 import type { SyncSettings } from './config';
+import { showRepositorySetup } from './ui/repository-setup';
 
 export class GitHubSyncSettingTab extends PluginSettingTab {
   constructor(
@@ -40,7 +41,8 @@ export class GitHubSyncSettingTab extends PluginSettingTab {
       'Personal access token',
       'Requires repository contents read/write access. Stored locally in plugin settings; never included in sync.',
     );
-    text('branch', 'Branch', 'Must match the checked-out branch of an existing vault.');
+    text('branch', 'Branch', 'GitHub branch to import or sync, such as main.');
+    void showRepositorySetup(containerEl.createDiv(), plugin);
     text('authorName', 'Author name', 'Name recorded in commits.');
     text('authorEmail', 'Author email', 'Email recorded in commits.');
     const toggle = (
@@ -119,12 +121,6 @@ export class GitHubSyncSettingTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName('Test connection')
       .addButton((button) => button.setButtonText('Test').onClick(() => plugin.testConnection()));
-    new Setting(containerEl).setName('Sync now').addButton((button) =>
-      button
-        .setButtonText('Sync')
-        .setCta()
-        .onClick(() => plugin.run('sync')),
-    );
     containerEl.createEl('p', {
       text: plugin.settings.lastSyncTime
         ? `Last successful transfer: ${new Date(plugin.settings.lastSyncTime).toLocaleString()}`

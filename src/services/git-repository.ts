@@ -67,7 +67,10 @@ export class GitRepository {
     }
   }
   async prepare(): Promise<void> {
-    if (!(await this.exists())) throw new Error('Clone or initialize a repository first.');
+    if (!(await this.exists()))
+      throw new Error(
+        'Open GitHub Synchronization settings and select Import repository to download an existing repository, or Initialize repository for local notes.',
+      );
     const branch = await git.currentBranch(this.options);
     if (branch !== this.settings.branch)
       throw new Error(

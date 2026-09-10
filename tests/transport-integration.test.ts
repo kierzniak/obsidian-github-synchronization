@@ -3,7 +3,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import git from 'isomorphic-git';
 import { fixture, Fixture } from './helpers/vault';
-import { requestUrl } from './helpers/obsidian';
+import { requestUrl, TestElement } from './helpers/obsidian';
+import { showRepositorySetup } from '../src/ui/repository-setup';
 import { SyncService } from '../src/services/sync-service';
 
 let seed: Fixture;
@@ -88,13 +89,6 @@ test('clones, merges another device’s changes, and pushes real Git objects thr
   });
   nativeGit(['-C', seed.dir, 'push', bare, 'main']);
   await client.write('.obsidian/preferences.json', 'local preferences');
-  await client.repo().clone();
-  expect((await client.read('.obsidian/preferences.json')).toString()).toBe('local preferences');
-  expect(await client.repo().changes()).toEqual([]);
-  expect(Array.from(await client.read('asset.png'))).toEqual(Array.from(image));
-  await seed.commit({ 'remote.md': 'other device' });
-  nativeGit(['-C', seed.dir, 'push', bare, 'main']);
-  await client.write('local.md', 'my local note');
   const completed = jest.fn(async () => {});
   const sync = new SyncService(
     () => client.settings,
@@ -103,7 +97,23 @@ test('clones, merges another device’s changes, and pushes real Git objects thr
     async () => null,
     completed,
   );
-  await sync.run('sync');
+  const setup = new TestElement();
+  await showRepositorySetup(setup as unknown as HTMLElement, {
+    hasRepository: () => client.adapter.exists('.git/HEAD'),
+    run: async (operation) => {
+      await sync.run(operation);
+    },
+  });
+  expect(setup.settings[0].buttons[0].label).toBe('Import repository');
+  await setup.settings[0].buttons[0].click();
+  expect(setup.settings[0].buttons[0].label).toBe('Sync now');
+  expect((await client.read('.obsidian/preferences.json')).toString()).toBe('local preferences');
+  expect(await client.repo().changes()).toEqual([]);
+  expect(Array.from(await client.read('asset.png'))).toEqual(Array.from(image));
+  await seed.commit({ 'remote.md': 'other device' });
+  nativeGit(['-C', seed.dir, 'push', bare, 'main']);
+  await client.write('local.md', 'my local note');
+  await setup.settings[0].buttons[0].click();
   expect((await client.read('remote.md')).toString()).toBe('other device');
   expect(nativeGit(['--git-dir', bare, 'show', 'main:local.md']).toString()).toBe('my local note');
   expect(Array.from(nativeGit(['--git-dir', bare, 'show', 'main:asset.png']))).toEqual(

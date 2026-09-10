@@ -4,7 +4,7 @@ Synchronize an Obsidian vault with one GitHub repository. The plugin uses JavaSc
 
 ## Beta releases
 
-This build is **1.0.0-beta.1**. Install beta releases through BRAT using `kierzniak/obsidian-github-synchronization`.
+This build is **1.0.0-beta.2**. Install beta releases through BRAT using `kierzniak/obsidian-github-synchronization`.
 
 Releases formerly numbered `1.1.0` through `1.1.4` are now `1.0.0-beta.1` through `1.0.0-beta.5`, in the same order. Source code, tests, and build configuration are included at each matching tag.
 
@@ -15,9 +15,9 @@ If you already installed a `1.1.x` build, use BRAT’s reinstall/version selecti
 1. Install `main.js`, `manifest.json`, and `styles.css` in your vault’s `.obsidian/plugins/obsidian-github-synchronization/` directory and enable the plugin in Community plugins.
 2. Enter the repository (`owner/repository`), branch, author name/email, and a GitHub personal access token in the plugin settings. A fine-grained token needs access to that repository and **Contents: read and write**. Repository rules may impose additional requirements.
 3. Select **Test connection**.
-4. Choose the appropriate command:
-   - **Clone repository** downloads an existing repository into an empty vault. Existing Obsidian configuration may remain; existing notes and Git repositories prevent cloning.
-   - **Initialize repository** connects existing local notes to a new repository. Then use **Sync** or **Push** to upload them.
+4. In **Repository setup**, choose:
+   - **Import repository** downloads an existing repository into an empty vault. Existing Obsidian configuration may remain; existing notes and Git repositories prevent cloning.
+   - **Initialize repository** connects existing local notes to a new repository. Then select **Sync now** to upload them.
    - For an existing Git vault, its `origin` and checked-out branch must match the settings. The plugin refuses to silently switch repositories or branches.
 
 A configured repository change requires a separate vault or a deliberate reconfiguration with a Git client. Token, author, exclusion, conflict, and scheduler changes apply to the next operation without reloading the plugin.
@@ -88,6 +88,7 @@ The generated `main.js` stays ignored by Git and is the file Obsidian loads. Rel
 
 - `src/main.ts`: Obsidian lifecycle, commands, notices, and event registration.
 - `src/config.ts`, `src/settings.ts`: settings loading and settings UI.
+- `src/ui/repository-setup.ts`: first-time import and initialization flow.
 - `src/services/sync-service.ts`: operation lock, orchestration, configuration snapshots.
 - `src/services/git-repository.ts`: Git operations and merge checks.
 - `src/services/git-changes.ts`: content comparisons, exclusions, and staged-file checks.
