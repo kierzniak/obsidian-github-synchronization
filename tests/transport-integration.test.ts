@@ -1,6 +1,9 @@
 import { execFileSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as vm from 'vm';
+import type GitHubSyncPlugin from '../src/main';
+import * as obsidian from './helpers/obsidian';
 import git from 'isomorphic-git';
 import { fixture, Fixture } from './helpers/vault';
 import { requestUrl, TestElement } from './helpers/obsidian';
@@ -138,5 +141,88 @@ test.each(['push', 'sync'] as const)(
     await sync.run(operation);
     expect(nativeGit(['--git-dir', bare, 'show', 'main:local.md']).toString()).toBe('initial note');
     expect(fs.existsSync(client.absolute('.git/HEAD'))).toBe(true);
+  },
+);
+
+// Run the distributed artifact, not source modules that inherit Node's Buffer.
+test.each(['clone', 'init'] as const)(
+  'mobile bundle can %s and sync without Node globals',
+  async (setupOperation) => {
+    const image = Uint8Array.from({ length: 256 }, (_, i) => i);
+    if (setupOperation === 'clone') {
+      await seed.repo().initialize();
+      await seed.commit({ 'note.md': 'base\n', 'asset.png': image });
+      nativeGit(['-C', seed.dir, 'push', bare, 'main']);
+    }
+    const notices: string[] = [];
+    const sandbox = vm.createContext({
+      module: { exports: {} },
+      console,
+      TextEncoder,
+      TextDecoder,
+      URL,
+      // The host filesystem boundary and plugin share browser byte types.
+      ArrayBuffer,
+      Uint8Array,
+      setTimeout,
+      clearTimeout,
+      setInterval,
+      clearInterval,
+      document: { hidden: false, addEventListener() {}, removeEventListener() {} },
+      require(id: string) {
+        if (id !== 'obsidian') throw new Error(`Unavailable mobile dependency: ${id}`);
+        return {
+          ...obsidian,
+          Notice: class {
+            constructor(message: string) {
+              notices.push(message);
+            }
+          },
+        };
+      },
+    });
+    expect(vm.runInContext('[typeof Buffer, typeof process, typeof global]', sandbox)).toEqual([
+      'undefined',
+      'undefined',
+      'undefined',
+    ]);
+    vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8'), sandbox);
+    const Plugin = sandbox.module.exports.default;
+    const plugin: GitHubSyncPlugin = new Plugin({
+      vault: { ...client.vault, on: jest.fn(), offref: jest.fn() },
+      workspace: { onLayoutReady() {} },
+    });
+    plugin.loadData = async () => client.settings;
+    await plugin.onload();
+    const run = async (operation: 'clone' | 'init' | 'sync') => {
+      notices.length = 0;
+      await plugin.run(operation);
+      expect(notices).toHaveLength(1);
+      expect(notices[0]).not.toMatch(/^GitHub sync:/);
+    };
+    try {
+      await run(setupOperation);
+      if (setupOperation === 'clone') {
+        expect((await client.read('note.md')).toString()).toBe('base\n');
+        expect(Array.from(await client.read('asset.png'))).toEqual(Array.from(image));
+        await seed.commit({ 'remote.md': 'another device' });
+        nativeGit(['-C', seed.dir, 'push', bare, 'main']);
+      }
+      await client.write('local.md', 'mobile note');
+      await client.write('local.png', image);
+      await run('sync');
+      expect(nativeGit(['--git-dir', bare, 'show', 'main:local.md']).toString()).toBe(
+        'mobile note',
+      );
+      expect(Array.from(nativeGit(['--git-dir', bare, 'show', 'main:local.png']))).toEqual(
+        Array.from(image),
+      );
+      if (setupOperation === 'clone')
+        expect((await client.read('remote.md')).toString()).toBe('another device');
+      expect(await client.repo().changes()).toEqual([]);
+      expect(vm.runInContext('typeof Buffer', sandbox)).toBe('undefined');
+    } finally {
+      plugin.unload();
+    }
   },
 );

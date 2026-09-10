@@ -4,6 +4,7 @@ const context = await esbuild.context({
   entryPoints: ['src/main.ts'],
   bundle: true,
   platform: 'browser',
+  inject: ['src/buffer-shim.ts'],
   external: ['obsidian'],
   format: 'cjs',
   target: 'es2020',

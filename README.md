@@ -4,7 +4,7 @@ Synchronize an Obsidian vault with one GitHub repository. The plugin uses JavaSc
 
 ## Beta releases
 
-This build is **1.0.0-beta.2**. Install beta releases through BRAT using `kierzniak/obsidian-github-synchronization`.
+This build is **1.0.0-beta.3**. Install beta releases through BRAT using `kierzniak/obsidian-github-synchronization`.
 
 Releases formerly numbered `1.1.0` through `1.1.4` are now `1.0.0-beta.1` through `1.0.0-beta.5`, in the same order. Source code, tests, and build configuration are included at each matching tag.
 
@@ -56,9 +56,9 @@ A failed initial clone leaves its downloaded `.git` data for inspection rather t
 
 ## iOS and Android
 
-The bundle includes its browser Buffer implementation and has no external runtime dependency except `obsidian`. Git and GitHub REST requests both use Obsidian’s `requestUrl`.
+The build injects a local browser Buffer binding into dependencies that expect it, without changing Obsidian’s globals. The bundle includes that implementation and has no external runtime dependency except `obsidian`. Git and GitHub REST requests both use Obsidian’s `requestUrl`.
 
-Automated validation covers loading without Node globals, binary filesystem contracts, real Git histories, and complete clone/fetch/merge/push exchanges through the mobile HTTP adapter. This is **not a substitute for testing on a physical iPhone or iPad**. Device testing remains necessary before declaring an iOS release validated. Background sync while Obsidian is suspended is not guaranteed.
+Automated validation runs the actual production bundle’s import, initialization, and sync operations in a sandbox without Node globals, including clone/fetch/merge/push exchanges and binary attachments through the mobile HTTP adapter. Source-level tests also cover filesystem contracts and real Git histories. This is **not a substitute for testing on a physical iPhone or iPad**. Device testing remains necessary before declaring an iOS release validated. Background sync while Obsidian is suspended is not guaranteed.
 
 For a device smoke test, use a disposable repository to check clone, a Markdown edit, an attachment upload/download, another device’s edit, a text conflict, offline/reconnect, and app suspension during a transfer. Verify both Git history and attachment checksums.
 
@@ -87,6 +87,7 @@ The generated `main.js` stays ignored by Git and is the file Obsidian loads. Rel
 ### Code organization
 
 - `src/main.ts`: Obsidian lifecycle, commands, notices, and event registration.
+- `src/buffer-shim.ts`: build-time Buffer binding for browser dependencies.
 - `src/config.ts`, `src/settings.ts`: settings loading and settings UI.
 - `src/ui/repository-setup.ts`: first-time import and initialization flow.
 - `src/services/sync-service.ts`: operation lock, orchestration, configuration snapshots.
