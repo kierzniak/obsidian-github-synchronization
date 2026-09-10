@@ -213,7 +213,7 @@ test.each(['clone', 'init'] as const)(
       await run('sync');
       expect(plugin.settings.lastSyncTime).toBeGreaterThan(0);
       expect(nativeGit(['--git-dir', bare, 'log', '--format=%s', 'main']).toString()).toMatch(
-        /vault backup: Added 2 file\(s\) - \d{4}-\d{2}-\d{2}T/,
+        /^vault backup: 2 changed file\(s\)$/m,
       );
       expect(nativeGit(['--git-dir', bare, 'show', 'main:local.md']).toString()).toBe(
         'mobile note',

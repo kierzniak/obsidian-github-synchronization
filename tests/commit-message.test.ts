@@ -1,20 +1,14 @@
 import { commitMessage } from '../src/services/commit-message';
 import { loadSettings } from '../src/config';
 
-test('commit messages match the detailed desktop history format with UTC timestamps', () => {
+test('commit messages use a lowercase summary without a date', () => {
   expect(
-    commitMessage(
-      [
-        { path: 'a', type: 'modified' },
-        { path: 'b', type: 'added' },
-        { path: 'c', type: 'deleted' },
-        { path: 'd', type: 'modified' },
-      ],
-      new Date('2026-09-10T12:00:00Z'),
-    ),
-  ).toBe(
-    'vault backup: Added 1 file(s), Modified 2 file(s), Deleted 1 file(s) - 2026-09-10T12:00:00.000Z',
-  );
+    commitMessage([
+      { path: 'a', type: 'modified' },
+      { path: 'b', type: 'added' },
+      { path: 'c', type: 'deleted' },
+    ]),
+  ).toBe('vault backup: 3 changed file(s)');
 });
 test('notification preferences migrate with background success enabled by default', () => {
   expect(loadSettings(null).syncNotifications).toBe('always');
