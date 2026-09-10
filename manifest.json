@@ -1,7 +1,7 @@
 {
   "id": "obsidian-github-synchronization",
   "name": "GitHub Synchronization",
-  "version": "1.1.4",
+  "version": "1.0.0-beta.1",
   "minAppVersion": "0.15.0",
   "description": "Seamlessly synchronize your Obsidian notes with GitHub repositories. Version control, backup, and multi-device sync.",
   "author": "Piotr Kierzniewski",
