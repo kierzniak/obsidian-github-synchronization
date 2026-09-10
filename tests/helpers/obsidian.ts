@@ -6,12 +6,19 @@ export class TFolder {
 }
 export const requestUrl = jest.fn();
 export class Notice {
-  constructor(public message: string) {}
+  static messages: string[] = [];
+  constructor(public message: string) {
+    Notice.messages.push(message);
+  }
 }
 export class TestElement {
   children: TestElement[] = [];
   settings: Setting[] = [];
   text = '';
+  setText(value: string) {
+    this.text = value;
+    return this;
+  }
   empty() {
     this.children = [];
     this.settings = [];
@@ -42,6 +49,9 @@ export class Plugin {
   async saveData(_data: unknown) {}
   addCommand(_command: unknown) {}
   addSettingTab(_tab: unknown) {}
+  addRibbonIcon(_icon: string, _title: string, _callback: unknown) {
+    return new TestElement();
+  }
   registerEvent(ref: unknown) {
     this.cleanups.push(() => this.app.vault.offref(ref));
   }
@@ -123,5 +133,41 @@ export class Setting {
   }
   addDropdown(callback: (input: TestInput) => unknown) {
     return this.addText(callback);
+  }
+}
+
+export class MenuItem {
+  title = '';
+  disabled = false;
+  click: () => Promise<void> | void = () => {};
+  setTitle(value: string) {
+    this.title = value;
+    return this;
+  }
+  setDisabled(value: boolean) {
+    this.disabled = value;
+    return this;
+  }
+  setIcon(_value: string) {
+    return this;
+  }
+  onClick(callback: () => Promise<void> | void) {
+    this.click = callback;
+    return this;
+  }
+}
+export class Menu {
+  items: MenuItem[] = [];
+  addItem(callback: (item: MenuItem) => unknown) {
+    const item = new MenuItem();
+    this.items.push(item);
+    callback(item);
+    return this;
+  }
+  addSeparator() {
+    return this;
+  }
+  showAtMouseEvent(_event: unknown) {
+    return this;
   }
 }

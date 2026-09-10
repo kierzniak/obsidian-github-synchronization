@@ -4,6 +4,7 @@ import { excluded, repositoryUrl } from '../paths';
 import { ObsidianFSAdapter } from './obsidian-fs-adapter';
 import { mergeDriver, ResolveConflict, SyncConflict } from './conflict-resolver';
 import http from './http';
+import { commitMessage } from './commit-message';
 import { Change, getChanges, changedFiles } from './git-changes';
 import { Checkout } from './checkout';
 
@@ -155,7 +156,7 @@ export class GitRepository {
     }
     await git.commit({
       ...this.options,
-      message: `Vault backup: ${changes.length} changed file(s)`,
+      message: commitMessage(changes),
       author: this.author,
     });
     return changes.length;

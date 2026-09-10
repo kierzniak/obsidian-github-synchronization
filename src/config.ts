@@ -11,6 +11,7 @@ export interface SyncSettings {
   excludePatterns: string[];
   maxFileSize: number;
   conflictResolutionMode: 'manual' | 'local' | 'remote';
+  syncNotifications: 'always' | 'manual' | 'off';
   lastSyncTime: number;
 }
 export const DEFAULT_SETTINGS: SyncSettings = {
@@ -26,6 +27,7 @@ export const DEFAULT_SETTINGS: SyncSettings = {
   excludePatterns: ['.obsidian/**', '.trash/**', '.DS_Store', 'node_modules/**'],
   maxFileSize: 100 * 1024 * 1024,
   conflictResolutionMode: 'manual',
+  syncNotifications: 'always',
   lastSyncTime: 0,
 };
 export function loadSettings(data: Partial<SyncSettings> | null): SyncSettings {
@@ -63,6 +65,8 @@ export function loadSettings(data: Partial<SyncSettings> | null): SyncSettings {
     data.maxFileSize > 0
   )
     settings.maxFileSize = data.maxFileSize;
+  if (['always', 'manual', 'off'].includes(data.syncNotifications || ''))
+    settings.syncNotifications = data.syncNotifications!;
   if (typeof data.lastSyncTime === 'number' && Number.isFinite(data.lastSyncTime))
     settings.lastSyncTime = data.lastSyncTime;
   if (data.conflictResolutionMode === 'local' || data.conflictResolutionMode === 'remote')

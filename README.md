@@ -4,7 +4,7 @@ Synchronize an Obsidian vault with one GitHub repository. The plugin uses JavaSc
 
 ## Beta releases
 
-This build is **1.0.0-beta.3**. Install beta releases through BRAT using `kierzniak/obsidian-github-synchronization`.
+This build is **1.0.0-beta.4**. Install beta releases through BRAT using `kierzniak/obsidian-github-synchronization`.
 
 Releases formerly numbered `1.1.0` through `1.1.4` are now `1.0.0-beta.1` through `1.0.0-beta.5`, in the same order. Source code, tests, and build configuration are included at each matching tag.
 
@@ -25,6 +25,12 @@ A configured repository change requires a separate vault or a deliberate reconfi
 ## Sync behavior
 
 **Sync** commits local changes, fetches and merges the remote branch, then pushes. **Pull** also commits local changes first so they are recoverable before remote files are applied. **Push** commits and uploads, but will not overwrite remote history if GitHub rejects the push. **Commit** only saves locally.
+
+Use the **GitHub synchronization** ribbon icon to open a menu with **Last sync** and **Sync now**, without entering settings. On mobile, the ribbon is available from the left sidebar. The **Sync with GitHub** command remains available in the command palette and can be assigned a hotkey or mobile toolbar shortcut. Manual sync follows the same safe merge and push behavior as automatic sync.
+
+**Last sync** appears directly below the settings sync controls and refreshes after a successful sync, pull, or push. **Sync notifications** controls successful-transfer toasts: **Always, including automatic sync** (default), **Manual sync only**, or **Off**. Errors and explicitly requested status/history remain visible.
+
+Backup commits use the same detailed format on desktop and mobile: `vault backup: Added 1 file(s), Modified 2 file(s) - 2026-09-10T12:00:00.000Z`. Counts include only changed categories, and timestamps use UTC. Update and reload the plugin on both devices for consistent messages; existing history is preserved.
 
 All commands share one operation lock. Status lists pending file changes, and history displays the ten most recent commits. Failures do not advance the last-successful-transfer timestamp.
 
@@ -90,6 +96,8 @@ The generated `main.js` stays ignored by Git and is the file Obsidian loads. Rel
 - `src/buffer-shim.ts`: build-time Buffer binding for browser dependencies.
 - `src/config.ts`, `src/settings.ts`: settings loading and settings UI.
 - `src/ui/repository-setup.ts`: first-time import and initialization flow.
+- `src/ui/sync-menu.ts`: quick sync menu and shared last-sync label.
+- `src/services/commit-message.ts`: consistent commit summaries across devices.
 - `src/services/sync-service.ts`: operation lock, orchestration, configuration snapshots.
 - `src/services/git-repository.ts`: Git operations and merge checks.
 - `src/services/git-changes.ts`: content comparisons, exclusions, and staged-file checks.

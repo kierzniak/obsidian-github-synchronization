@@ -1,9 +1,19 @@
 import { App, PluginSettingTab, Setting } from 'obsidian';
 import type GitHubSyncPlugin from './main';
 import type { SyncSettings } from './config';
+import { lastSyncText } from './ui/sync-menu';
 import { showRepositorySetup } from './ui/repository-setup';
 
 export class GitHubSyncSettingTab extends PluginSettingTab {
+  private lastSyncEl?: HTMLElement;
+
+  refreshLastSync(): void {
+    this.lastSyncEl?.setText(lastSyncText(this.syncPlugin.settings.lastSyncTime));
+  }
+
+  hide(): void {
+    this.lastSyncEl = undefined;
+  }
   constructor(
     app: App,
     private syncPlugin: GitHubSyncPlugin,
@@ -42,7 +52,10 @@ export class GitHubSyncSettingTab extends PluginSettingTab {
       'Requires repository contents read/write access. Stored locally in plugin settings; never included in sync.',
     );
     text('branch', 'Branch', 'GitHub branch to import or sync, such as main.');
-    void showRepositorySetup(containerEl.createDiv(), plugin);
+    const syncCard = containerEl.createDiv();
+    void showRepositorySetup(syncCard.createDiv(), plugin);
+    this.lastSyncEl = syncCard.createEl('p');
+    this.refreshLastSync();
     text('authorName', 'Author name', 'Name recorded in commits.');
     text('authorEmail', 'Author email', 'Email recorded in commits.');
     const toggle = (
@@ -88,6 +101,20 @@ export class GitHubSyncSettingTab extends PluginSettingTab {
       'Sync after three seconds without edits and when returning to the app.',
     );
     new Setting(containerEl)
+      .setName('Sync notifications')
+      .setDesc('Show a toast after successful sync, pull, or push. Errors are always shown.')
+      .addDropdown((input) =>
+        input
+          .addOption('always', 'Always, including automatic sync')
+          .addOption('manual', 'Manual sync only')
+          .addOption('off', 'Off')
+          .setValue(plugin.settings.syncNotifications)
+          .onChange(async (value) => {
+            plugin.settings.syncNotifications = value as SyncSettings['syncNotifications'];
+            await plugin.saveSettings(false);
+          }),
+      );
+    new Setting(containerEl)
       .setName('Excluded files')
       .setDesc(
         'One glob pattern per line. Existing tracked files stay in Git history; exclusions never delete them.',
@@ -121,10 +148,5 @@ export class GitHubSyncSettingTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName('Test connection')
       .addButton((button) => button.setButtonText('Test').onClick(() => plugin.testConnection()));
-    containerEl.createEl('p', {
-      text: plugin.settings.lastSyncTime
-        ? `Last successful transfer: ${new Date(plugin.settings.lastSyncTime).toLocaleString()}`
-        : 'No successful transfer yet.',
-    });
   }
 }

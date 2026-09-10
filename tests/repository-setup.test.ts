@@ -18,9 +18,11 @@ test('empty vault settings expose import and initialization, without a premature
   tab.display();
   await Promise.resolve();
   const root = tab.containerEl as unknown as TestElement;
-  const setup = root.children.find((child) =>
-    child.settings.some((setting) => setting.name === 'Import an existing GitHub repository'),
-  )!;
+  const setup = root.children
+    .flatMap((child) => child.children)
+    .find((child) =>
+      child.settings.some((setting) => setting.name === 'Import an existing GitHub repository'),
+    )!;
   expect(setup).toBeDefined();
   expect(buttons(setup).map((button) => button.label)).toEqual([
     'Import repository',
@@ -80,4 +82,24 @@ test('filesystem errors are shown instead of incorrectly offering an import', as
   });
   expect(buttons(element)).toEqual([]);
   expect(element.children.some((child) => child.text.includes('Storage unavailable'))).toBe(true);
+});
+
+test('last sync sits directly below the sync controls and refreshes without rebuilding settings', async () => {
+  const plugin = { settings: loadSettings(null), hasRepository: async () => true };
+  const tab = new GitHubSyncSettingTab({} as App, plugin as unknown as GitHubSyncPlugin);
+  tab.display();
+  await Promise.resolve();
+  const root = tab.containerEl as unknown as TestElement;
+  const card = root.children.find((child) =>
+    child.children.some((item) => item.text === 'Last sync: never'),
+  )!;
+  expect(buttons(card.children[0])[0].label).toBe('Sync now');
+  expect(card.children[1].text).toBe('Last sync: never');
+  plugin.settings.lastSyncTime = 1700000000000;
+  tab.refreshLastSync();
+  expect(card.children[1].text).toBe(`Last sync: ${new Date(1700000000000).toLocaleString()}`);
+  tab.hide();
+  plugin.settings.lastSyncTime = 0;
+  tab.refreshLastSync();
+  expect(card.children[1].text).not.toBe('Last sync: never');
 });

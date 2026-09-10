@@ -6,11 +6,13 @@ import { AutoSync } from './services/auto-sync';
 import { testConnection } from './services/github-api';
 import { ObsidianFSAdapter } from './services/obsidian-fs-adapter';
 import { Operation, SyncService } from './services/sync-service';
+import { createSyncMenu } from './ui/sync-menu';
 import { ConflictModal } from './ui/conflict-modal';
 
 export default class GitHubSyncPlugin extends Plugin {
   settings: SyncSettings = loadSettings(DEFAULT_SETTINGS);
   private sync!: SyncService;
+  private settingTab?: GitHubSyncSettingTab;
   private scheduler!: AutoSync;
   private modals = new Set<ConflictModal>();
   private dirtyDuringSync = false;
@@ -35,13 +37,20 @@ export default class GitHubSyncPlugin extends Plugin {
       async () => {
         this.settings.lastSyncTime = Date.now();
         await this.saveSettings(false);
+        this.settingTab?.refreshLastSync();
       },
     );
     this.scheduler = new AutoSync(
       () => this.settings,
       () => this.run('sync', false),
     );
-    this.addSettingTab(new GitHubSyncSettingTab(this.app, this));
+    this.settingTab = new GitHubSyncSettingTab(this.app, this);
+    this.addSettingTab(this.settingTab);
+    this.addRibbonIcon('refresh-cw', 'GitHub synchronization', (event) => {
+      createSyncMenu(this.settings.lastSyncTime, this.sync.busy, () =>
+        this.run('sync'),
+      ).showAtMouseEvent(event);
+    });
     const commands: Array<[string, string, Operation]> = [
       ['clone', 'Clone repository', 'clone'],
       ['pull', 'Pull from GitHub', 'pull'],
@@ -96,7 +105,11 @@ export default class GitHubSyncPlugin extends Plugin {
       const result = await this.sync.run(operation, interactive);
       if (!result) return;
       this.lastAutoError = '';
-      if (interactive)
+      const notify = result.synced
+        ? this.settings.syncNotifications === 'always' ||
+          (interactive && this.settings.syncNotifications === 'manual')
+        : interactive;
+      if (notify)
         new Notice(
           result.message,
           operation === 'history' || operation === 'status' ? 15000 : 6000,
