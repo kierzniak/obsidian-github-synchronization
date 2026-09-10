@@ -9,7 +9,7 @@ function arrayBuffer(bytes: Uint8Array): ArrayBuffer {
   copy.set(bytes);
   return copy.buffer;
 }
-/** Git sees the complete filesystem. Sync exclusions belong in the Git service. */
+/** Expose the complete filesystem to Git; the Git service applies sync exclusions. */
 export class ObsidianFSAdapter {
   readonly promises: VaultFileSystem;
   constructor(vault: Vault, adapter: DataAdapter = vault.adapter) {

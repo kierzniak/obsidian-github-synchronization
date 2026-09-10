@@ -8,7 +8,7 @@ interface PendingCheckout {
   branch: string;
 }
 
-/** Retain the target commit across a failed write or app suspension. Never force checkout. */
+/** Keep the target commit for recovery after a failed write or app suspension. Do not force checkout. */
 export class Checkout {
   private options;
   constructor(

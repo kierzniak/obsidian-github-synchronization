@@ -144,7 +144,7 @@ test.each(['push', 'sync'] as const)(
   },
 );
 
-// Run the distributed artifact, not source modules that inherit Node's Buffer.
+// Exercise the release bundle without the Buffer global available to source tests.
 test.each(['clone', 'init'] as const)(
   'mobile bundle can %s and sync without Node globals',
   async (setupOperation) => {
@@ -161,7 +161,7 @@ test.each(['clone', 'init'] as const)(
       TextEncoder,
       TextDecoder,
       URL,
-      // The host filesystem boundary and plugin share browser byte types.
+      // Share browser byte types between the plugin and the host filesystem adapter.
       ArrayBuffer,
       Uint8Array,
       setTimeout,

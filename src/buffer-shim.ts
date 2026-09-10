@@ -1,2 +1,2 @@
-// esbuild binds dependency references locally; Obsidian's globals stay untouched.
+// Give dependencies a local Buffer binding without changing Obsidian's globals.
 export { Buffer } from 'buffer';

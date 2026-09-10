@@ -8,7 +8,7 @@ import { commitMessage } from './commit-message';
 import { Change, getChanges, changedFiles } from './git-changes';
 import { Checkout } from './checkout';
 
-/** One immutable configuration per operation; no cached token or remote. */
+/** Each operation gets its own fixed settings, including the current token and remote. */
 export class GitRepository {
   private readonly options;
   private readonly url: string;
@@ -113,7 +113,7 @@ export class GitRepository {
     const entries = await this.fs.promises.readdir('.');
     if (entries.some((path) => ![this.configDir, '.trash', '.DS_Store'].includes(path)))
       throw new Error('Clone into an empty vault to protect existing notes.');
-    // Download history before touching notes. A failed clone is left for inspection, never deleted automatically.
+    // Download history before writing notes. Leave failed clones in place for inspection.
     await git.clone({
       ...this.options,
       ...this.network,
@@ -126,7 +126,7 @@ export class GitRepository {
     const allowed = files.filter((path) => !this.ignores(path));
     if (allowed.length)
       await git.checkout({ ...this.options, ref: this.settings.branch, filepaths: allowed });
-    // Keep skipped tracked files in the index without writing them over local configuration.
+    // Index skipped tracked files while preserving the local configuration files.
     await git.walk({
       ...this.options,
       trees: [git.TREE({ ref: 'HEAD' })],
@@ -169,7 +169,7 @@ export class GitRepository {
       throw error;
     }
   }
-  /** Never let a text merge decode a binary attachment. Both versions remain in Git history. */
+  /** Stop text merging for binary attachments and keep both versions in Git history. */
   private async checkBinaryConflicts(local: string, remote: string): Promise<void> {
     const bases = await git.findMergeBase({ ...this.options, oids: [local, remote] });
     if (!bases.length)
@@ -229,7 +229,7 @@ export class GitRepository {
     this.ensureActive();
     return this.mergeRemote(local, fetched.fetchHead, resolve);
   }
-  /** Separated from transport so real Git histories can be tested entirely offline. */
+  /** Merge local Git histories independently of transport, including in offline tests. */
   async mergeRemote(local: string, remote: string, resolve?: ResolveConflict): Promise<number> {
     if (local === remote) return 0;
     await this.checkBinaryConflicts(local, remote);
@@ -250,7 +250,7 @@ export class GitRepository {
         `Remote changes touch excluded files: ${blocked.join(', ')}. Resolve those files with a Git client before syncing.`,
       );
     if (!files.length && result.oid === local) return 0;
-    // Check for edits made while fetching/resolving. Never force a checkout over new edits.
+    // Preserve any edits made during fetch or conflict resolution; do not force checkout.
     if ((await this.changes()).length)
       throw new Error('Notes changed during sync. Your edits are intact; sync again.');
     if ((await this.head()) !== local)

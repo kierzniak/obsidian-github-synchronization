@@ -1,7 +1,7 @@
 import { requestUrl } from 'obsidian';
 import type { HttpClient } from 'isomorphic-git';
 
-/** requestUrl works on desktop and mobile without a CORS proxy. */
+/** Use requestUrl on desktop and mobile without a CORS proxy. */
 const http: HttpClient = {
   async request({ url, method = 'GET', headers = {}, body }) {
     const chunks: Uint8Array[] = [];
@@ -12,7 +12,7 @@ const http: HttpClient = {
       bytes.set(chunk, offset);
       offset += chunk.byteLength;
     }
-    // Native mobile transports manage these headers themselves.
+    // Let the native mobile transport set these headers.
     const outgoing = Object.fromEntries(
       Object.entries(headers).filter(
         ([key]) => !['host', 'content-length', 'user-agent'].includes(key.toLowerCase()),

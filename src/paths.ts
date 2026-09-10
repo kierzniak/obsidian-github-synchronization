@@ -18,7 +18,7 @@ export function repositoryUrl(input: string): string {
   return `https://github.com/${match[1]}/${match[2]}.git`;
 }
 export function excluded(path: string, patterns: string[], configDir = '.obsidian'): boolean {
-  // Never upload Git metadata or this vault's credentials, even with custom exclusions.
+  // Always exclude Git metadata and vault credentials, including with custom patterns.
   if (
     path === '.git' ||
     path.startsWith('.git/') ||

@@ -1,76 +1,78 @@
 # GitHub Synchronization for Obsidian
 
-Synchronize an Obsidian vault with one GitHub repository. The plugin uses JavaScript Git and Obsidian’s filesystem and HTTP APIs; it does not require native Git, Node.js, or a CORS proxy at runtime.
+Sync an Obsidian vault with a single GitHub repository. The plugin runs Git in JavaScript and uses Obsidian’s filesystem and HTTP APIs. It needs no native Git installation, Node.js, or CORS proxy at runtime.
 
 ## Beta releases
 
-This build is **1.0.0-beta.5**. Install beta releases through BRAT using `kierzniak/obsidian-github-synchronization`.
+This build is 1.0.0-beta.5. Install it through BRAT using `kierzniak/obsidian-github-synchronization`.
 
-Releases formerly numbered `1.1.0` through `1.1.4` are now `1.0.0-beta.1` through `1.0.0-beta.5`, in the same order. Source code, tests, and build configuration are included at each matching tag.
+The releases previously numbered `1.1.0` through `1.1.4` are now `1.0.0-beta.1` through `1.0.0-beta.5`, in that order. Each tag includes the source, tests, and build configuration for that release.
 
-If you already installed a `1.1.x` build, use BRAT’s reinstall/version selection once to install **1.0.0-beta.5**, then reload the plugin. Automatic update checks treat the new numbering as an older version. Choose the latest-version setting afterward to follow future betas.
+If you have a `1.1.x` build installed, select and reinstall 1.0.0-beta.5 in BRAT, then reload the plugin. BRAT treats the new version number as older, so its automatic update check will not make this change. After reinstalling, choose the latest-version setting to receive future betas.
+
+When loading older settings, the plugin ignores the `pushOnClose` field and unused debug fields.
 
 ## Setup
 
 1. Install `main.js`, `manifest.json`, and `styles.css` in your vault’s `.obsidian/plugins/obsidian-github-synchronization/` directory and enable the plugin in Community plugins.
-2. Enter the repository (`owner/repository`), branch, author name/email, and a GitHub personal access token in the plugin settings. A fine-grained token needs access to that repository and **Contents: read and write**. Repository rules may impose additional requirements.
+2. In the plugin settings, enter the repository (`owner/repository`), branch, commit author name and email, and a GitHub personal access token. A fine-grained token needs access to the repository with **Contents: read and write** permission. The repository’s rules may add other requirements.
 3. Select **Test connection**.
 4. In **Repository setup**, choose:
-   - **Import repository** downloads an existing repository into an empty vault. Existing Obsidian configuration may remain; existing notes and Git repositories prevent cloning.
+   - **Import repository** downloads an existing repository into an empty vault. You can keep the vault’s Obsidian settings, but it must contain no notes or Git repository.
    - **Initialize repository** connects existing local notes to a new repository. Then select **Sync now** to upload them.
-   - For an existing Git vault, its `origin` and checked-out branch must match the settings. The plugin refuses to silently switch repositories or branches.
+   - If the vault already uses Git, its `origin` and checked-out branch must match the plugin settings. The plugin will not switch either for you.
 
-A configured repository change requires a separate vault or a deliberate reconfiguration with a Git client. Token, author, exclusion, conflict, and scheduler changes apply to the next operation without reloading the plugin.
+To connect a different repository, use a separate vault or reconfigure the existing one with a Git client. Changes to the token, author, exclusions, conflict preferences, and sync schedule apply to the next operation. You do not need to reload the plugin.
 
 ## Sync behavior
 
-**Sync** commits local changes, fetches and merges the remote branch, then pushes. **Pull** also commits local changes first so they are recoverable before remote files are applied. **Push** commits and uploads, but will not overwrite remote history if GitHub rejects the push. **Commit** only saves locally.
+**Sync** commits your local changes, fetches and merges the remote branch, then pushes the result. **Pull** saves local changes in a commit before applying remote files, so you can recover those edits. **Push** commits and uploads your changes; if GitHub rejects the push, it stops without overwriting remote history. **Commit** saves changes locally.
 
-Use the **GitHub synchronization** ribbon icon to open a menu with **Last sync** and **Sync now**, without entering settings. On mobile, the ribbon is available from the left sidebar. The **Sync with GitHub** command remains available in the command palette and can be assigned a hotkey or mobile toolbar shortcut. Manual sync follows the same safe merge and push behavior as automatic sync.
+Open the **GitHub synchronization** ribbon menu to see **Last sync** or select **Sync now**. On mobile, the ribbon is in the left sidebar. You can also run **Sync with GitHub** from the command palette, assign a hotkey, or add a mobile toolbar shortcut. Manual and automatic sync use the same merge and push checks.
 
-**Last sync** appears directly below the settings sync controls and refreshes after a successful sync, pull, or push. **Sync notifications** controls successful-transfer toasts: **Always, including automatic sync** (default), **Manual sync only**, or **Off**. Errors and explicitly requested status/history remain visible.
+In settings, **Last sync** sits below the sync controls and updates after a successful sync, pull, or push. Use **Sync notifications** to choose when success toasts appear: **Always, including automatic sync** (the default), **Manual sync only**, or **Off**. Errors and status or history you request still appear.
 
-Backup commits use the same concise format on desktop and mobile: `vault backup: 3 changed file(s)`. The message starts lowercase; dates remain in Git commit metadata. Update and reload the plugin on both devices for consistent messages; existing history is preserved.
+Desktop and mobile use the commit message `vault backup: 3 changed file(s)`. The message starts lowercase, and Git records the date in the commit metadata. Update and reload both devices to use the same format. Existing history stays intact.
 
-All commands share one operation lock. Status lists pending file changes, and history displays the ten most recent commits. Failures do not advance the last-successful-transfer timestamp.
+Only one command can run at a time. Status lists pending file changes; history shows the ten most recent commits. A failed transfer leaves the last-sync time unchanged.
 
-Periodic sync runs while the app is open. Sync after edits waits for three seconds of inactivity. Startup pull waits until Obsidian has loaded the vault. Returning to the app triggers sync when periodic sync or sync after edits is enabled. Listeners and timers are removed when the plugin unloads.
+Periodic sync runs while Obsidian is open. Sync after edits waits until you have stopped editing for three seconds, and startup pull waits for the vault to load. Returning to the app also triggers sync if periodic sync or sync after edits is enabled. The plugin removes its listeners and timers when it unloads.
 
-There is no push-on-close setting: network operations cannot reliably finish during app closure or mobile suspension. Old `pushOnClose` and unused debug settings are ignored when loading settings.
+The plugin has no push-on-close setting because network requests may not finish when the app closes or is suspended.
 
 ## Exclusions and attachments
 
 - Default exclusions cover `.obsidian/**`, `.trash/**`, `.DS_Store`, and `node_modules/**`.
-- Exclusions filter changes considered for commits. They never hide tracked files from Git or turn them into deletions.
+- Exclusions control which changes the plugin commits. Tracked files stay visible to Git and are not marked for deletion just because you exclude them.
 - Excluded files already staged by another Git client stop the operation. Unstage them before syncing.
-- Remote changes to excluded tracked files stop the merge before checkout. Resolve those changes with a Git client or deliberately adjust the exclusion. Excluding a tracked file does not erase its history.
-- The plugin’s credential settings file is always excluded, even with a custom Obsidian configuration directory. If that file is already tracked, sync stops until it is removed from tracking.
-- Attachments and Git objects are read and written as bytes. Same-size, rapid note edits are detected by comparing contents, rather than relying only on filesystem timestamps.
-- Files above the configured size limit cause a visible failure rather than a misleading successful backup. Large repositories and attachments still consume memory during Git transfers.
+- If remote changes affect an excluded tracked file, the merge stops before checkout. Resolve the changes with a Git client or adjust the exclusion. The file’s history is preserved.
+- The plugin always excludes its credential settings file, including when you use a custom Obsidian configuration directory. If Git already tracks that file, you must remove it from tracking before syncing.
+- The plugin reads and writes attachments and Git objects as bytes. It compares file contents to detect rapid edits, including edits that leave the file size unchanged and that filesystem timestamps alone could miss.
+- If a file exceeds the configured size limit, the plugin reports an error and stops the backup. Large repositories and attachments use memory during transfers.
 
 ## Conflicts and recovery
 
-Independent text edits are merged automatically. For overlapping text edits, choose **Ask me**, **Prefer local edits**, or **Prefer remote edits**. Automatic preferences affect conflicting sections while retaining independent edits from both devices.
+The plugin merges independent text edits automatically. For overlapping edits, choose **Ask me**, **Prefer local edits**, or **Prefer remote edits**. A preference applies only to the conflicting sections; independent edits from both devices are kept.
 
-During an interactive sync, **Ask me** opens an editor with both versions and a proposed merge. Saving applies the chosen content; cancelling leaves local files and both committed versions intact. Background sync stops on a manual conflict and asks you to run an interactive sync.
+With **Ask me** selected, a manual sync opens an editor showing both versions and a proposed merge. Save to apply your choice, or cancel to keep the local files and both committed versions intact. If a background sync finds a conflict that needs your input, it stops and asks you to run a manual sync.
 
-Binary conflicts, modify/delete conflicts, unsupported Git merge cases, and unrelated histories stop safely for resolution with a Git client. The plugin does not force-push, invent a binary merge, or automatically erase history.
+Binary conflicts, modify/delete conflicts, unsupported merges, and unrelated histories require a Git client to resolve. The plugin stops when it encounters them. It cannot merge conflicting binary files, and it never force-pushes or automatically erases history.
 
-Before checkout, the plugin checks for edits made during the network operation or conflict dialog. It records the previous and target commits in `.git/obsidian-sync-checkout.json`. If a checkout is interrupted, the next operation attempts to finish it. New edits made after the interruption cause recovery to stop and preserve the files for review. Do not delete the recovery record blindly; resolve the recorded commits and working-tree changes with a Git client if recovery cannot complete.
+Before checkout, the plugin checks whether you edited files during the transfer or while the conflict dialog was open. It records the previous and target commits in `.git/obsidian-sync-checkout.json`. If checkout is interrupted, the next operation tries to finish it. Recovery stops if you have made further edits, leaving those files for review. If recovery cannot finish, use a Git client to resolve the recorded commits and working-tree changes before deleting the recovery record.
 
-A failed initial clone leaves its downloaded `.git` data for inspection rather than automatically deleting vault contents.
+If the initial clone fails, the downloaded `.git` data and vault contents are left in place for inspection.
 
 ## iOS and Android
 
-The build injects a local browser Buffer binding into dependencies that expect it, without changing Obsidian’s globals. The bundle includes that implementation and has no external runtime dependency except `obsidian`. Git and GitHub REST requests both use Obsidian’s `requestUrl`.
+The build supplies a browser Buffer implementation to dependencies that need it. This binding stays inside the bundle, so Obsidian’s globals are unchanged. The only external runtime dependency is `obsidian`. Both Git transfers and GitHub REST requests use Obsidian’s `requestUrl`.
 
-Automated validation runs the actual production bundle’s import, initialization, and sync operations in a sandbox without Node globals, including clone/fetch/merge/push exchanges and binary attachments through the mobile HTTP adapter. Source-level tests also cover filesystem contracts and real Git histories. This is **not a substitute for testing on a physical iPhone or iPad**. Device testing remains necessary before declaring an iOS release validated. Background sync while Obsidian is suspended is not guaranteed.
+Automated tests run the production bundle’s import, initialization, and sync operations without Node globals. They exercise clone, fetch, merge, and push through the mobile HTTP adapter, including binary attachments. Source tests also check filesystem contracts and real Git histories. A release still needs testing on a physical iPhone or iPad before it can be considered validated for iOS. Sync may stop while Obsidian is suspended.
 
-For a device smoke test, use a disposable repository to check clone, a Markdown edit, an attachment upload/download, another device’s edit, a text conflict, offline/reconnect, and app suspension during a transfer. Verify both Git history and attachment checksums.
+For a device smoke test, use a disposable repository. Try cloning it, editing Markdown, uploading and downloading an attachment, and receiving an edit from another device. Also check a text conflict, going offline and reconnecting, and suspending the app during a transfer. Verify the Git history and attachment checksums.
 
 ## Privacy
 
-Notes, attachments, commit metadata, and authentication requests are sent only to the configured GitHub repository/service. The token is stored in plaintext in Obsidian’s local plugin settings; there is no claim of encrypted credential storage. The plugin excludes that file from its own sync, but other backup or synchronization tools may copy it. There is no telemetry or third-party proxy.
+The plugin sends notes, attachments, commit metadata, and authentication requests only to the configured GitHub repository and service. Your token is stored as unencrypted plaintext in Obsidian’s local plugin settings. The plugin excludes that file from sync, though other backup or sync tools may copy it. The plugin has no telemetry and uses no third-party proxy.
 
 ## Development
 
@@ -81,14 +83,14 @@ npm ci
 npm run check
 ```
 
-`check` runs a strict TypeScript build, lint, tests, and the mobile bundle-load check. The transport integration tests use a local native Git executable and temporary repositories; no GitHub account or network connection is needed. Set `GIT_BINARY` if Git is not available on `PATH`.
+`check` runs the strict TypeScript build, lint, tests, and mobile bundle-load check. Transport integration tests use native Git and temporary local repositories. They need no GitHub account or network connection. Set `GIT_BINARY` if Git is unavailable on `PATH`.
 
 ```sh
 npm run dev       # Rebuild while editing
 npm run format    # Format source, tests, and configuration
 ```
 
-The generated `main.js` stays ignored by Git and is the file Obsidian loads. Reload the plugin after a production build.
+Obsidian loads the generated `main.js`, which Git ignores. Reload the plugin after a production build.
 
 ### Code organization
 
@@ -107,6 +109,6 @@ The generated `main.js` stays ignored by Git and is the file Obsidian loads. Rel
 - `src/services/conflict-resolver.ts`, `src/ui/conflict-modal.ts`: merge policy and interactive resolution.
 - `src/services/auto-sync.ts`: interval and debounce scheduling.
 
-Tests exercise the actual implementation with temporary vaults and real Git objects. Only Obsidian’s host API and the external network boundary are simulated.
+Tests run the implementation against temporary vaults and real Git objects. They simulate Obsidian’s host API and the external network boundary.
 
 Licensed under the [MIT License](LICENSE).

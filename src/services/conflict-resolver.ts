@@ -16,7 +16,7 @@ export class SyncConflict extends Error {
     super(message);
   }
 }
-/** Resolve only conflicting hunks; retain independent changes from both devices. */
+/** Resolve conflicting hunks and keep independent edits from both devices. */
 export function mergeDriver(
   mode: SyncSettings['conflictResolutionMode'],
   resolve?: ResolveConflict,

@@ -16,7 +16,7 @@ export interface OperationResult {
   message: string;
   synced: boolean;
 }
-/** All commands share this lock, including status (Git may refresh the index). */
+/** Serialize every command, including status, because Git may refresh the index. */
 export class SyncService {
   private running = false;
   private stopped = false;
@@ -77,7 +77,7 @@ export class SyncService {
         received = await repo.pull(interactive ? this.resolve : undefined);
       if (this.stopped) return null;
       if (operation === 'push' || operation === 'sync') await repo.push();
-      // Do not label newly edited settings with the result of an older operation.
+      // Update the timestamp only if these settings still describe the completed transfer.
       if (
         settings.repositoryUrl === this.settings().repositoryUrl &&
         settings.branch === this.settings().branch

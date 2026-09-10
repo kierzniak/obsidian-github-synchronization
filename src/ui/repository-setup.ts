@@ -6,7 +6,7 @@ export interface RepositorySetupActions {
   run(operation: 'clone' | 'init' | 'sync'): Promise<void>;
 }
 
-/** Make first-time import available directly in settings on desktop and mobile. */
+/** Show import and setup actions in desktop and mobile settings. */
 export async function showRepositorySetup(
   container: HTMLElement,
   actions: RepositorySetupActions,

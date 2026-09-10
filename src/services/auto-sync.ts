@@ -1,6 +1,6 @@
 import { SyncSettings } from '../config';
 
-/** One timer for interval sync and one debounce for edits; stopped on unload. */
+/** Run interval and edit-debounce timers, and stop both on unload. */
 export class AutoSync {
   private interval: ReturnType<typeof setInterval> | undefined;
   private debounce: ReturnType<typeof setTimeout> | undefined;

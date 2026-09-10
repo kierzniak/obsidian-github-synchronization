@@ -8,7 +8,7 @@ export interface Change {
   type: 'added' | 'modified' | 'deleted';
 }
 
-/** Compare actual bytes so coarse mobile timestamps cannot hide edits. */
+/** Compare file contents to catch edits that mobile timestamps can miss. */
 export async function getChanges(
   fs: ObsidianFSAdapter,
   settings: SyncSettings,
@@ -50,7 +50,7 @@ export async function getChanges(
       const stat = await fs.promises.stat(path);
       if (stat.size > settings.maxFileSize)
         throw new Error(`File exceeds the sync size limit: ${path}`);
-      // Mobile timestamps can be coarse. Compare bytes rather than trusting Git's stat cache.
+      // Git's stat cache can miss edits when mobile timestamps have low precision.
       const bytes = await fs.promises.readFile(path);
       working = (await git.hashBlob({ object: bytes })).oid;
     }
